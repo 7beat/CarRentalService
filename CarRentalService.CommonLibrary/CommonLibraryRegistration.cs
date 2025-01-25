@@ -6,13 +6,15 @@ namespace CarRentalService.CommonLibrary;
 
 public static class CommonLibraryRegistration
 {
-    public static void RegisterCommonLibrary(this IServiceCollection services)
+    public static void RegisterCommonLibrary(this IServiceCollection services, ServiceRegistrationData registrationData)
     {
         services.AddMediatR(config =>
         {
-            config.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
+            config.RegisterServicesFromAssembly(registrationData.ExecutingAssembly);
         });
 
-        services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+        services.AddValidatorsFromAssembly(registrationData.ExecutingAssembly);
     }
 }
+
+public record ServiceRegistrationData(Assembly ExecutingAssembly);
