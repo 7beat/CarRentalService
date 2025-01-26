@@ -17,4 +17,10 @@ public class RentalsFunction(ILogger<RentalsFunction> logger, IMediator mediator
         logger.LogInformation("C# HTTP trigger function processed a request.");
         return new OkObjectResult("Welcome to Azure Functions!");
     }
+
+    [Function(nameof(ProcessCreateRentalMessage))]
+    public void ProcessCreateRentalMessage([RabbitMQTrigger("create-rental", ConnectionStringSetting = "RabbitMQConnStr")] string queueItem)
+    {
+        Console.WriteLine("Message Captured from CarRentalApi :D");
+    }
 }
