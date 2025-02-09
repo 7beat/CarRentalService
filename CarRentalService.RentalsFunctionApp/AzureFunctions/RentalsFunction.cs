@@ -1,6 +1,7 @@
 using CarRentalService.CommonLibrary.Constants;
 using CarRentalService.RentalsLibrary.Constants;
 using CarRentalService.RentalsLibrary.Features.Dev;
+using CarRentalService.RentalsLibrary.Models.Messaging;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
@@ -20,7 +21,7 @@ public class RentalsFunction(ILogger<RentalsFunction> logger, IMediator mediator
     }
 
     [Function(nameof(ProcessCreateRentalMessage))]
-    public void ProcessCreateRentalMessage([RabbitMQTrigger(AppConsts.CreateRentalQueue, ConnectionStringSetting = AppConsts.RabbitMQConnectionString)] string queueItem)
+    public void ProcessCreateRentalMessage([RabbitMQTrigger(AppConsts.CreateRentalQueue, ConnectionStringSetting = AppConsts.RabbitMQConnectionString)] QueueItemBase<CreateRentalMessage> queueItem)
     {
         Console.WriteLine("Message Captured from CarRentalApi :D");
     }
