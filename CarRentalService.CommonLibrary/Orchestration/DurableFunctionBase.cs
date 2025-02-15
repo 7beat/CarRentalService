@@ -48,7 +48,7 @@ public class DurableFunctionBase(ILogger<DurableFunctionBase> logger)
     [Function(nameof(CleanupDurableFunction))]
     public async Task CleanupDurableFunction(
         [DurableClient] DurableTaskClient durableTaskClient,
-        [TimerTrigger(OrchestrationConsts.EveryMidnightSchedule, RunOnStartup = true)] TimerInfo timer)
+        [TimerTrigger(OrchestrationConsts.EveryMidnightSchedule)] TimerInfo timer)
     {
         await PurgeInstancesAsync(durableTaskClient, DateTime.UtcNow.AddDays(-10));
     }
