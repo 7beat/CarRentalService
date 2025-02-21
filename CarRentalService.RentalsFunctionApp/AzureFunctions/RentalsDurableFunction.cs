@@ -1,5 +1,6 @@
 ﻿using CarRentalService.CommonLibrary.Constants;
 using CarRentalService.CommonLibrary.Orchestration;
+using CarRentalService.RentalsLibrary.Features.Dev;
 using MediatR;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
@@ -12,10 +13,10 @@ public class RentalsDurableFunction(ILogger<RentalsDurableFunction> logger, IMed
 {
     [Function(nameof(OrchestrationTimeTrigger))]
     public async Task OrchestrationTimeTrigger(
-        [TimerTrigger(OrchestrationConsts.EveryMinuteSchedule, RunOnStartup = true)] TimerInfo timerInfo,
+        [TimerTrigger(CronScheduleConsts.EveryMinuteSchedule, RunOnStartup = true)] TimerInfo timerInfo,
         [DurableClient] DurableTaskClient durableTaskClient)
     {
-        var entityId = new EntityInstanceId(OrchestrationConsts.InstanceId, nameof(OrchestrationTimeTrigger));
+        var entityId = new EntityInstanceId(OrchestrationConsts.Instance, nameof(OrchestrationTimeTrigger));
         var instanceId = await durableTaskClient.Entities.GetEntityAsync(entityId);
 
         if (instanceId is not null && !await HasPreviousOrchestrationEndedAsync(durableTaskClient, instanceId.State.Value))
@@ -42,7 +43,11 @@ public class RentalsDurableFunction(ILogger<RentalsDurableFunction> logger, IMed
     [Function(nameof(GetRentalsAsync))]
     public async Task<bool> GetRentalsAsync([ActivityTrigger] TaskActivityContext context)
     {
+        //var result = await mediator.Send(new TestCommand2());
+        //return result.Succeded;
 
-        return true;
+        var result = await mediator.Send(new RemoveRentalCommand(Guid.NewGuid()));
+
+        return result;
     }
 }

@@ -1,10 +1,10 @@
-﻿namespace CarRentalService.CommonLibrary.Constants;
+﻿using CarRentalService.CommonLibrary.Orchestration;
+
+namespace CarRentalService.CommonLibrary.Constants;
 public static class OrchestrationConsts
 {
-    public const string InstanceId = nameof(InstanceId);
-    public const string SetOperation = "Set";
-    public const string Value = nameof(Value);
+    public const string Instance = nameof(InstanceId);
+    public const string SetOperation = nameof(InstanceId.Set);
+    public const string Value = nameof(InstanceId.Value);
 
-    public const string EveryMinuteSchedule = "0 * * * * *";
-    public const string EveryMidnightSchedule = "0 0 0 * * *";
 }
