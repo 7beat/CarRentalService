@@ -21,7 +21,7 @@ internal class ExceptionMiddleware(ILogger<ExceptionMiddleware> logger) : IFunct
         catch (Exception ex)
         {
             var triggerType = context.FunctionDefinition.InputBindings.Values
-                        .FirstOrDefault(x => x.Type == "durableClient")?.Type
+                        .FirstOrDefault(x => x.Type == TriggerTypeConsts.DurableClient)?.Type
                         ?? context.FunctionDefinition.InputBindings.Values
                                .FirstOrDefault()?.Type;
 
