@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using CarRentalService.CommonLibrary.Constants;
 using CarRentalService.CommonLibrary.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
@@ -26,15 +27,15 @@ internal class ExceptionMiddleware(ILogger<ExceptionMiddleware> logger) : IFunct
 
             switch (triggerType)
             {
-                case "rabbitMQTrigger":
+                case TriggerTypeConsts.RabbitMQTrigger:
                     if (IsRetryableException(ex))
                         throw;
                     await HandleRabbitMQException();
                     break;
-                case "httpTrigger":
+                case TriggerTypeConsts.HttpTrigger:
                     await HandleHttpException(context, ex);
                     break;
-                case "durableClient" or "orchestrationTrigger" or "activityTrigger":
+                case TriggerTypeConsts.DurableClient or TriggerTypeConsts.OrchestrationTrigger or TriggerTypeConsts.ActivityTrigger:
                     if (IsRetryableException(ex))
                         throw;
                     await HandleDurableException(context, ex);
