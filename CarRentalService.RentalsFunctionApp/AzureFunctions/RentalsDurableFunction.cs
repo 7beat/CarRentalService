@@ -13,7 +13,7 @@ public class RentalsDurableFunction(ILogger<RentalsDurableFunction> logger, IMed
 {
     [Function(nameof(OrchestrationTimeTrigger))]
     public async Task OrchestrationTimeTrigger(
-        [TimerTrigger(CronScheduleConsts.EveryMinuteSchedule, RunOnStartup = true)] TimerInfo timerInfo,
+        [TimerTrigger(CronScheduleConsts.Never, RunOnStartup = false)] TimerInfo timerInfo,
         [DurableClient] DurableTaskClient durableTaskClient)
     {
         var entityId = new EntityInstanceId(OrchestrationConsts.Instance, nameof(OrchestrationTimeTrigger));
