@@ -10,8 +10,4 @@
     <ProjectReference Include="..\CarRentalService.CommonLibrary\CarRentalService.CommonLibrary.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Features\" />
-  </ItemGroup>
-
 </Project>
