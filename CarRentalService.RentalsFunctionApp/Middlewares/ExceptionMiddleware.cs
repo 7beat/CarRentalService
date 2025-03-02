@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using CarRentalService.CommonLibrary.Constants;
 using CarRentalService.CommonLibrary.Exceptions;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
@@ -65,15 +66,53 @@ internal class ExceptionMiddleware(ILogger<ExceptionMiddleware> logger) : IFunct
             return;
         }
 
-        logger.LogError($"Exception occurred: {ex.Message}");
+        HttpStatusCode statusCode = HttpStatusCode.InternalServerError;
+        ProblemDetails problemDetails = new();
+        logger.LogError($"Exception occured: {ex.Message}");
 
-        HttpStatusCode statusCode = HttpStatusCode.BadRequest;
-        var problemDetails = new ProblemDetails
+        switch (ex)
         {
-            Status = (int)statusCode,
-            Title = Enum.GetName(statusCode),
-            Detail = ex.Message
-        };
+            case BadRequestException badRequest:
+                statusCode = HttpStatusCode.BadRequest;
+                problemDetails = new()
+                {
+                    Title = badRequest.Message,
+                    Status = (int)statusCode,
+                    Detail = badRequest.InnerException?.Message,
+                    Type = nameof(BadRequestException)
+                };
+                break;
+            case NotFoundException notFound:
+                statusCode = HttpStatusCode.NotFound;
+                problemDetails = new()
+                {
+                    Title = notFound.Message,
+                    Status = (int)statusCode,
+                    Detail = notFound.InnerException?.Message,
+                    Type = nameof(NotFoundException)
+                };
+                break;
+            case ValidationException validationException:
+                statusCode = HttpStatusCode.BadRequest;
+                var errorDetails = string.Join(Environment.NewLine, validationException.Errors.Select(error => error.ErrorMessage));
+                problemDetails = new()
+                {
+                    Title = validationException.Message,
+                    Status = (int)statusCode,
+                    Detail = errorDetails,
+                    Type = nameof(ValidationException)
+                };
+                break;
+            default:
+                problemDetails = new()
+                {
+                    Title = "An unexpected error occurred.",
+                    Status = (int)statusCode,
+                    Detail = ex.Message,
+                    Type = nameof(Exception)
+                };
+                break;
+        }
 
         var response = request.CreateResponse(statusCode);
         await response.WriteAsJsonAsync(problemDetails);
