@@ -1,5 +1,6 @@
 using System.Text.Json;
 using CarRentalService.CommonLibrary.Constants;
+using CarRentalService.CommonLibrary.Exceptions;
 using CarRentalService.RentalsLibrary.Constants;
 using CarRentalService.RentalsLibrary.Features.Dev;
 using CarRentalService.RentalsLibrary.MappingProfiles;
@@ -20,11 +21,12 @@ public class RentalsFunction(ILogger<RentalsFunction> logger, IMediator mediator
         var requestBody = await req.ReadAsStringAsync();
         if (!string.IsNullOrEmpty(requestBody))
         {
-            var command = JsonSerializer.Deserialize<TestCommand>(requestBody);
+            var command = JsonSerializer.Deserialize<TestCommand>(requestBody) ??
+                throw new BadRequestException("Deserialization resulted in null");
+
             await mediator.Send(command);
         }
 
-        //await mediator.Send(new TestCommand(2, "John"));
         logger.LogInformation("C# HTTP trigger function processed a request.");
         return new OkObjectResult("Welcome to Azure Functions!");
     }
