@@ -1,4 +1,5 @@
-﻿using CarRentalService.CommonLibrary.Constants;
+﻿using System.Text.Json;
+using CarRentalService.CommonLibrary.Constants;
 using CarRentalService.CommonLibrary.Orchestration;
 using CarRentalService.RentalsLibrary.Features.Dev;
 using MediatR;
@@ -13,19 +14,46 @@ public class RentalsDurableFunction(ILogger<RentalsDurableFunction> logger, IMed
 {
     [Function(nameof(OrchestrationTimeTrigger))]
     public async Task OrchestrationTimeTrigger(
-        [TimerTrigger(CronScheduleConsts.Never, RunOnStartup = false)] TimerInfo timerInfo,
-        [DurableClient] DurableTaskClient durableTaskClient)
+        [TimerTrigger(CronScheduleConsts.EveryMinuteSchedule, RunOnStartup = true)] TimerInfo timerInfo,
+        [DurableClient] DurableTaskClient durableTaskClient,
+        CancellationToken cancellationToken)
     {
-        var entityId = new EntityInstanceId(OrchestrationConsts.Instance, nameof(OrchestrationTimeTrigger));
-        var instanceId = await durableTaskClient.Entities.GetEntityAsync(entityId);
+        EntityInstanceId entityId = new("InstanceId", "RentalsDurableFunction");
+        var entity = await durableTaskClient.Entities.GetEntityAsync(entityId, cancellationToken);
 
-        if (instanceId is not null && !await HasPreviousOrchestrationEndedAsync(durableTaskClient, instanceId.State.Value))
-            return;
+        var previousInstanceId = JsonSerializer.Deserialize<InstanceState>(entity?.State?.Value);
+        TimeSpan orchestrationTimeout = TimeSpan.FromMinutes(10);
 
-        var newInstanceId = Guid.NewGuid().ToString();
-        await durableTaskClient.Entities.SignalEntityAsync(entityId, OrchestrationConsts.SetOperation, newInstanceId);
+        if (previousInstanceId is not null)
+        {
+            var status = await durableTaskClient.GetInstanceAsync(previousInstanceId.Value, cancellationToken);
 
-        await durableTaskClient.ScheduleNewOrchestrationInstanceAsync(nameof(RentalsOrchestrator), new StartOrchestrationOptions { InstanceId = newInstanceId });
+            if (status is not null && status.RuntimeStatus is OrchestrationRuntimeStatus.Running or OrchestrationRuntimeStatus.Pending or OrchestrationRuntimeStatus.Failed)
+            {
+                var createdTimeUtc = status.CreatedAt.ToUniversalTime();
+                var nowUtc = DateTime.UtcNow;
+
+                if (nowUtc - createdTimeUtc < orchestrationTimeout)
+                {
+                    logger.LogInformation("Previous orchestration {InstanceId} is still within timeout window. Skipping execution.", previousInstanceId.Value);
+                    return;
+                }
+                else
+                {
+                    logger.LogWarning("Previous orchestration {InstanceId} exceeded timeout. Terminating...", previousInstanceId.Value);
+                    await durableTaskClient.TerminateInstanceAsync(previousInstanceId.Value, "Exceeded max allowed runtime. Replacing with new instance.", cancellationToken);
+                }
+            }
+        }
+
+        string newInstanceId = Guid.NewGuid().ToString();
+        await durableTaskClient.Entities.SignalEntityAsync(entityId, OrchestrationConsts.SetOperation, newInstanceId, cancellation: cancellationToken);
+
+        await durableTaskClient.ScheduleNewOrchestrationInstanceAsync(
+            nameof(RentalsOrchestrator),
+            new StartOrchestrationOptions { InstanceId = newInstanceId }, cancellationToken);
+
+        logger.LogInformation("Started new orchestration {InstanceId}.", newInstanceId);
     }
 
     /// <summary>
